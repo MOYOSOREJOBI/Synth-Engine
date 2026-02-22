@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>PulseSynth Studio</title>
+  <style>
+    :root { --bg:#e8ecf3; --surface:#eef2f9; --text:#1f2937; --accent:#6d5efc; }
+    body{font-family:Inter,system-ui,sans-serif;background:var(--bg);color:var(--text);margin:0;padding:24px}
+    .neu{background:var(--surface);border-radius:16px;box-shadow:8px 8px 16px #c8ced9,-8px -8px 16px #fff;padding:16px}
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+    button,input,select{padding:10px;border-radius:10px;border:1px solid #d6dce8}
+    button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--accent)}
+  </style>
+</head>
+<body>
+  <main>
+    <h1>PulseSynth Studio</h1>
+    <p>Sample-accurate synth graphs with WASM DSP, AudioWorklet runtime, and a studio UI.</p>
+    <div class="grid">
+      <section class="neu" aria-label="Studio controls">
+        <button id="startAudio" aria-label="Start Audio">Start Audio</button>
+        <label>Master Gain <input id="masterGain" type="range" min="0" max="1" step="0.01" value="0.45" /></label>
+        <label>Osc Type <select id="oscType"><option>sine</option><option selected>saw</option><option>square</option><option>triangle</option></select></label>
+      </section>
+      <section class="neu" aria-label="Performance panel">
+        <pre id="perf">Awaiting engine…</pre>
+        <canvas id="scope" width="500" height="160"></canvas>
+      </section>
+    </div>
+  </main>
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>
