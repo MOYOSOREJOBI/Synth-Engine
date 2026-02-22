@@ -1,4 +1,5 @@
 const MAX_VOICES_LIMIT: usize = 32;
+const MAX_FRAMES: usize = 2048;
 
 #[repr(C)]
 #[derive(Clone, Copy)]
@@ -37,6 +38,8 @@ static mut LAST_L: f32 = 0.0;
 static mut LAST_R: f32 = 0.0;
 static mut MAX_VOICES: usize = 8;
 static mut VOICES: [Voice; MAX_VOICES_LIMIT] = [Voice::new(); MAX_VOICES_LIMIT];
+static mut OUT_L: [f32; MAX_FRAMES] = [0.0; MAX_FRAMES];
+static mut OUT_R: [f32; MAX_FRAMES] = [0.0; MAX_FRAMES];
 
 #[unsafe(no_mangle)]
 pub extern "C" fn init(sample_rate: f32, max_voices: u32) {
@@ -98,9 +101,8 @@ pub extern "C" fn all_notes_off() {
 }
 
 #[unsafe(no_mangle)]
-pub extern "C" fn render(out_l_ptr: *mut f32, out_r_ptr: *mut f32, frames: u32) -> u32 {
-    let out_l = unsafe { std::slice::from_raw_parts_mut(out_l_ptr, frames as usize) };
-    let out_r = unsafe { std::slice::from_raw_parts_mut(out_r_ptr, frames as usize) };
+pub extern "C" fn render(frames: u32) -> u32 {
+    let frames = (frames as usize).min(MAX_FRAMES);
     let sr = unsafe { SAMPLE_RATE };
     let a_step = 1.0 / (unsafe { ENV_A } * sr);
     let d_step = (1.0 - unsafe { ENV_S }) / (unsafe { ENV_D } * sr);
@@ -108,12 +110,14 @@ pub extern "C" fn render(out_l_ptr: *mut f32, out_r_ptr: *mut f32, frames: u32) 
     let alpha = (unsafe { CUTOFF } / sr).clamp(0.0005, 0.45);
 
     let mut active_count = 0u32;
-    for i in 0..frames as usize {
+    for i in 0..frames {
         let mut mono = 0.0f32;
         unsafe {
             for v in 0..MAX_VOICES {
                 let voice = &mut VOICES[v];
-                if !voice.active { continue; }
+                if !voice.active {
+                    continue;
+                }
                 active_count += 1;
                 if voice.gate {
                     if voice.env < 1.0 {
@@ -141,8 +145,8 @@ pub extern "C" fn render(out_l_ptr: *mut f32, out_r_ptr: *mut f32, frames: u32) 
             mono *= MASTER_GAIN / (MAX_VOICES as f32).sqrt();
             LAST_L += alpha * (mono - LAST_L);
             LAST_R += alpha * (mono - LAST_R);
-            out_l[i] = LAST_L;
-            out_r[i] = LAST_R;
+            OUT_L[i] = LAST_L;
+            OUT_R[i] = LAST_R;
         }
     }
 
@@ -150,8 +154,14 @@ pub extern "C" fn render(out_l_ptr: *mut f32, out_r_ptr: *mut f32, frames: u32) 
         PERF.cpu_ms_estimate = (frames as f32 / sr) * 0.25;
         PERF.voice_count = active_count.min(MAX_VOICES as u32);
     }
-    frames
+    frames as u32
 }
+
+#[unsafe(no_mangle)]
+pub extern "C" fn get_out_l_ptr() -> *const f32 { &raw const OUT_L as *const f32 }
+
+#[unsafe(no_mangle)]
+pub extern "C" fn get_out_r_ptr() -> *const f32 { &raw const OUT_R as *const f32 }
 
 #[unsafe(no_mangle)]
 pub extern "C" fn get_perf_ptr() -> *const PerfStats { &raw const PERF }
@@ -165,10 +175,17 @@ mod tests {
         init(48_000.0, 8);
         set_params(0.4, 0.01, 0.2, 0.7, 0.3, 1_200.0);
         note_on(69, 1.0);
-        let mut l = [0.0f32; 128];
-        let mut r = [0.0f32; 128];
-        render(l.as_mut_ptr(), r.as_mut_ptr(), 128);
-        assert!(l.iter().any(|x| x.abs() > 0.0001));
+        render(128);
+        let mut hit = false;
+        unsafe {
+            for i in 0..128 {
+                if OUT_L[i].abs() > 0.0001 {
+                    hit = true;
+                    break;
+                }
+            }
+        }
+        assert!(hit);
         note_off(69);
     }
 }

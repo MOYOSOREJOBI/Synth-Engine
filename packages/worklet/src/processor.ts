@@ -10,7 +10,9 @@ type Exports = {
   note_on: (note: number, velocity: number) => void;
   note_off: (note: number) => void;
   all_notes_off: () => void;
-  render: (leftPtr: number, rightPtr: number, frames: number) => number;
+  render: (frames: number) => number;
+  get_out_l_ptr: () => number;
+  get_out_r_ptr: () => number;
   get_perf_ptr: () => number;
 };
 
@@ -68,10 +70,17 @@ class PulseSynthProcessor extends AudioWorkletProcessor {
 
   private async initWasm(url: string, sampleRateArg: number, maxVoices: number) {
     try {
-      const mod = await WebAssembly.instantiateStreaming(fetch(url), {});
-      this.wasm = mod.instance.exports as unknown as Exports;
+      let instance: WebAssembly.WebAssemblyInstantiatedSource;
+      try {
+        instance = await WebAssembly.instantiateStreaming(fetch(url), {});
+      } catch {
+        const response = await fetch(url);
+        const bytes = await response.arrayBuffer();
+        instance = await WebAssembly.instantiate(bytes, {});
+      }
+      this.wasm = instance.instance.exports as unknown as Exports;
       this.wasm.init(sampleRateArg, maxVoices);
-      this.ensureBufferPointers(128);
+      this.ensureBufferPointers();
       this.ready = true;
       this.port.postMessage({ type: 'ready' });
     } catch (error) {
@@ -79,13 +88,11 @@ class PulseSynthProcessor extends AudioWorkletProcessor {
     }
   }
 
-  private ensureBufferPointers(frames: number) {
+  private ensureBufferPointers() {
     if (!this.wasm) return;
-    const needed = frames * 2 + 1024;
     this.wasmView = new Float32Array(this.wasm.memory.buffer);
-    if (this.wasmView.length < needed) return;
-    this.leftPtr = 0;
-    this.rightPtr = frames * 4;
+    this.leftPtr = this.wasm.get_out_l_ptr();
+    this.rightPtr = this.wasm.get_out_r_ptr();
   }
 
   private pushEvent(evt: SynthEvent) {
@@ -126,7 +133,7 @@ class PulseSynthProcessor extends AudioWorkletProcessor {
       outR.fill(0);
       return true;
     }
-    if (outL.length * 4 !== this.rightPtr) this.ensureBufferPointers(outL.length);
+    if (this.leftPtr === 0 || this.rightPtr === 0) this.ensureBufferPointers();
 
     const start = currentTime;
     this.flushEvents();
@@ -138,7 +145,7 @@ class PulseSynthProcessor extends AudioWorkletProcessor {
       params.envRelease[0] ?? 0.35,
       params.cutoff[0] ?? 2200
     );
-    this.wasm.render(this.leftPtr, this.rightPtr, outL.length);
+    this.wasm.render(outL.length);
 
     const baseL = this.leftPtr >> 2;
     const baseR = this.rightPtr >> 2;
