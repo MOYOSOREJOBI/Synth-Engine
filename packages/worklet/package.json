@@ -6,8 +6,5 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit"
-  },
-  "dependencies": {
-    "@pulsesynth/shared": "workspace:*"
   }
 }

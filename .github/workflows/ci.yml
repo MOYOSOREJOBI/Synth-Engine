@@ -1,7 +1,7 @@
 name: ci
 on: [push, pull_request]
 jobs:
-  build:
+  build-and-test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -9,9 +9,38 @@ jobs:
         with: { version: 9 }
       - uses: actions/setup-node@v4
         with: { node-version: 22, cache: pnpm }
-      - run: pnpm i
+      - run: pnpm install --frozen-lockfile=false
+
+      # Build TypeScript packages in dependency order
+      - run: pnpm --filter @pulsesynth/shared build
+      - run: pnpm --filter @pulsesynth/worklet build
+      - run: pnpm --filter @pulsesynth/engine build
+      - run: pnpm --filter @pulsesynth/cli build
+      - run: pnpm --filter @pulsesynth/api build
+
+      # Tests
+      - run: pnpm --filter @pulsesynth/shared test
+      - run: pnpm --filter @pulsesynth/engine test
+
+      # CLI smoke tests
+      - name: CLI render
+        working-directory: packages/cli
+        run: npx tsx src/index.ts render --seconds 1 --out /tmp/test.wav
+      - run: test -f /tmp/test.wav
+
+      - name: CLI bench
+        working-directory: packages/cli
+        run: npx tsx src/index.ts bench
+
+      # Lint (non-blocking)
       - run: pnpm lint || true
-      - run: pnpm typecheck
-      - run: pnpm test
-      - run: pnpm build
-      - run: pnpm --filter @pulsesynth/wasm-dsp build
+
+  rust-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - run: cargo test --manifest-path packages/wasm-dsp/Cargo.toml -- --test-threads=1
+      - run: cargo build --release --target wasm32-unknown-unknown --manifest-path packages/wasm-dsp/Cargo.toml
