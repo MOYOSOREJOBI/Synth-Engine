@@ -1,0 +1,6 @@
+services:
+  api:
+    build:
+      context: ../..
+      dockerfile: infra/docker/Dockerfile.api
+    ports: ["8787:8787"]

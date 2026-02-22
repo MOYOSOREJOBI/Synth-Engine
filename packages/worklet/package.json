@@ -1,0 +1,13 @@
+{
+  "name": "@pulsesynth/worklet",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "dist/processor.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@pulsesynth/shared": "workspace:*"
+  }
+}
