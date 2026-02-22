@@ -1,5 +1,6 @@
 import { z } from 'zod';
 
+// ── Patch schemas ────────────────────────────────────────────────────
 export const PatchV1Schema = z.object({
   version: z.literal(1),
   name: z.string().min(1),
@@ -21,17 +22,40 @@ export function migratePatch(input: unknown): Patch {
   return { ...v1, version: 2, noiseAmount: 0 };
 }
 
-export type ParamPath = 'masterGain' | 'cutoff' | 'resonance' | 'envAttack' | 'envDecay' | 'envSustain' | 'envRelease' | 'lfoRate' | 'lfoDepth';
+// ── Param path / ramp ────────────────────────────────────────────────
+export type ParamPath = 'masterGain' | 'cutoff' | 'resonance' | 'envAttack' | 'envDecay' | 'envSustain' | 'envRelease' | 'lfoRate' | 'lfoDepth' | 'noiseAmount' | 'oscType';
 export type Ramp = 'linear'|'exp'|'step';
 
+// Mapping from ParamPath to WASM param IDs (see lib.rs set_param)
+export const PARAM_IDS: Record<string, number> = {
+  masterGain: 0,
+  cutoff: 1,
+  resonance: 2,
+  envAttack: 3,
+  envDecay: 4,
+  envSustain: 5,
+  envRelease: 6,
+  noiseAmount: 7,
+  oscType: 8,
+};
+
+export const OSC_TYPE_MAP: Record<string, number> = {
+  sine: 0,
+  saw: 1,
+  square: 2,
+  triangle: 3,
+};
+
+// ── Synth events ─────────────────────────────────────────────────────
 export type SynthEvent =
   | { type: 'noteOn'; note: number; velocity: number; time: number }
   | { type: 'noteOff'; note: number; time: number }
   | { type: 'allNotesOff'; time: number }
   | { type: 'param'; path: ParamPath; value: number; time: number; ramp: Ramp };
 
+// ── Worklet messages ─────────────────────────────────────────────────
 export type WorkletMessage =
-  | { type: 'init'; wasmUrl?: string; sampleRate: number; maxVoices: number }
+  | { type: 'init'; wasmBytes: ArrayBuffer; sampleRate: number; maxVoices: number }
   | { type: 'eventBatch'; events: SynthEvent[] }
   | { type: 'patch'; patch: Patch }
   | { type: 'perfRequest' };
@@ -40,6 +64,7 @@ export type WorkletResponse =
   | { type: 'ready' }
   | { type: 'perfResponse'; perf: EnginePerformance };
 
+// ── Performance ──────────────────────────────────────────────────────
 export type EnginePerformance = {
   cpuMsAvg: number;
   cpuMsP95: number;
@@ -47,8 +72,10 @@ export type EnginePerformance = {
   audioQuantumMs: number;
   sampleRate: number;
   renderedFrames: number;
+  voiceCount: number;
 };
 
+// ── Default patch ────────────────────────────────────────────────────
 export const DEFAULT_PATCH: Patch = {
   version: 2,
   name: 'Warm Starter',
@@ -59,4 +86,13 @@ export const DEFAULT_PATCH: Patch = {
   lfo: { rate: 2.5, depth: 0.15, target: 'cutoff' },
   metadata: { tags: ['default'] },
   noiseAmount: 0.02
+};
+
+// ── Keyboard mapping ─────────────────────────────────────────────────
+export const KEYBOARD_MAP: Record<string, number> = {
+  z: 48, s: 49, x: 50, d: 51, c: 52, v: 53, g: 54, b: 55,
+  h: 56, n: 57, j: 58, m: 59,
+  q: 60, '2': 61, w: 62, '3': 63, e: 64, r: 65, '5': 66,
+  t: 67, '6': 68, y: 69, '7': 70, u: 71, i: 72, '9': 73,
+  o: 74, '0': 75, p: 76,
 };

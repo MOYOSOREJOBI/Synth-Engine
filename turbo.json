@@ -1,10 +1,13 @@
 {
   "$schema": "https://turbo.build/schema.json",
   "tasks": {
-    "dev": {"cache": false, "persistent": true},
-    "build": {"dependsOn": ["^build"], "outputs": ["dist/**", "build/**"]},
-    "test": {"dependsOn": ["^build"], "outputs": []},
-    "lint": {"outputs": []},
-    "typecheck": {"dependsOn": ["^typecheck"], "outputs": []}
+    "dev": { "cache": false, "persistent": true },
+    "build": {
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**", "build/**", "public/worklet/**", "public/wasm/**"]
+    },
+    "test": { "dependsOn": ["^build"], "outputs": [] },
+    "lint": { "outputs": [] },
+    "typecheck": { "dependsOn": ["^typecheck"], "outputs": [] }
   }
 }

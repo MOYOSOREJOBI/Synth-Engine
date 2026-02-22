@@ -5,30 +5,295 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>PulseSynth Studio</title>
   <style>
-    :root { --bg:#e8ecf3; --surface:#eef2f9; --text:#1f2937; --accent:#6d5efc; }
-    body{font-family:Inter,system-ui,sans-serif;background:var(--bg);color:var(--text);margin:0;padding:24px}
-    .neu{background:var(--surface);border-radius:16px;box-shadow:8px 8px 16px #c8ced9,-8px -8px 16px #fff;padding:16px}
-    .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-    button,input,select{padding:10px;border-radius:10px;border:1px solid #d6dce8}
-    button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--accent)}
+    :root {
+      --bg: #e8ecf3; --surface: #eef2f9; --text: #1f2937; --accent: #6d5efc;
+      --shadow-dark: #c8ced9; --shadow-light: #ffffff;
+      --green: #22c55e; --red: #ef4444; --yellow: #eab308;
+      --key-white: #f8fafc; --key-black: #1e293b;
+    }
+    [data-theme="dark"] {
+      --bg: #1a1b2e; --surface: #232440; --text: #e2e8f0; --accent: #818cf8;
+      --shadow-dark: #111122; --shadow-light: #2a2c50;
+      --key-white: #334155; --key-black: #0f172a;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Inter, system-ui, sans-serif; background: var(--bg); color: var(--text); }
+    .neu {
+      background: var(--surface); border-radius: 16px;
+      box-shadow: 6px 6px 12px var(--shadow-dark), -6px -6px 12px var(--shadow-light);
+      padding: 16px;
+    }
+    .neu-inset {
+      background: var(--surface); border-radius: 12px;
+      box-shadow: inset 3px 3px 6px var(--shadow-dark), inset -3px -3px 6px var(--shadow-light);
+      padding: 12px;
+    }
+    button, input, select {
+      padding: 8px 14px; border-radius: 10px; border: 1px solid var(--shadow-dark);
+      background: var(--surface); color: var(--text); font-size: 14px;
+      cursor: pointer; transition: box-shadow 0.15s;
+    }
+    button:hover { box-shadow: 2px 2px 6px var(--shadow-dark); }
+    button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--accent); }
+    input[type="range"] { -webkit-appearance: none; height: 6px; border: none; background: var(--shadow-dark); border-radius: 3px; cursor: pointer; }
+    input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%; background: var(--accent); cursor: pointer; }
+    label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; font-weight: 500; }
+    .header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 24px; margin: 12px; gap: 16px;
+    }
+    .header h1 { font-size: 20px; white-space: nowrap; }
+    .status { display: flex; gap: 12px; font-size: 12px; }
+    .status-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 4px; }
+    .status-dot.green { background: var(--green); }
+    .status-dot.red { background: var(--red); }
+    .status-dot.yellow { background: var(--yellow); }
+    .tabs {
+      display: flex; gap: 4px; padding: 0 24px; margin: 0 12px;
+      border-bottom: 1px solid var(--shadow-dark);
+    }
+    .tab {
+      padding: 8px 18px; border: none; border-radius: 10px 10px 0 0;
+      background: transparent; color: var(--text); font-weight: 500;
+      opacity: 0.6; transition: opacity 0.15s;
+    }
+    .tab.active { opacity: 1; background: var(--surface); box-shadow: 2px -2px 6px var(--shadow-dark); }
+    .tab-content { display: none; padding: 16px 24px; margin: 0 12px; }
+    .tab-content.active { display: block; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .controls-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px; }
+    .btn-group { display: flex; gap: 8px; flex-wrap: wrap; }
+    .btn-primary { background: var(--accent); color: white; border-color: var(--accent); font-weight: 600; }
+    .btn-sm { padding: 6px 12px; font-size: 12px; }
+    /* Keyboard */
+    .keyboard { position: relative; height: 120px; margin-top: 16px; overflow: hidden; user-select: none; }
+    .key {
+      position: absolute; bottom: 0; border-radius: 0 0 6px 6px;
+      display: flex; align-items: flex-end; justify-content: center;
+      padding-bottom: 6px; font-size: 10px; cursor: pointer; transition: background 0.05s;
+    }
+    .key-white { width: 36px; height: 110px; background: var(--key-white); border: 1px solid var(--shadow-dark); z-index: 1; color: #94a3b8; }
+    .key-black { width: 24px; height: 70px; background: var(--key-black); z-index: 2; color: #64748b; }
+    .key.active { background: var(--accent) !important; color: white !important; }
+    /* Canvas */
+    #scope { width: 100%; height: 140px; border-radius: 8px; background: #0f172a; display: block; }
+    /* Patch editor */
+    .patch-form { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .patch-form label { font-size: 13px; }
+    /* Cloud */
+    .auth-form { display: flex; flex-direction: column; gap: 8px; max-width: 320px; }
+    .auth-form input { padding: 10px; }
+    .patch-list { list-style: none; padding: 0; margin-top: 12px; }
+    .patch-list li {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 8px 12px; border-radius: 8px; margin-bottom: 6px;
+      background: var(--bg);
+    }
+    /* Perf */
+    .perf-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 12px; }
+    .perf-card { text-align: center; }
+    .perf-card .value { font-size: 24px; font-weight: 700; color: var(--accent); }
+    .perf-card .label { font-size: 11px; opacity: 0.7; margin-top: 2px; }
+    #perfChart { width: 100%; height: 120px; border-radius: 8px; background: #0f172a; display: block; margin-top: 12px; }
+    /* Docs */
+    .docs-content { max-width: 640px; line-height: 1.6; }
+    .docs-content h3 { margin-top: 16px; color: var(--accent); }
+    .docs-content kbd {
+      display: inline-block; padding: 2px 6px; border-radius: 4px;
+      background: var(--bg); border: 1px solid var(--shadow-dark);
+      font-family: monospace; font-size: 12px;
+    }
+    .docs-content table { border-collapse: collapse; width: 100%; margin-top: 8px; }
+    .docs-content td, .docs-content th { padding: 4px 8px; border: 1px solid var(--shadow-dark); font-size: 13px; }
+    @media (max-width: 768px) {
+      .grid { grid-template-columns: 1fr; }
+      .perf-grid { grid-template-columns: 1fr 1fr; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      * { transition: none !important; }
+    }
   </style>
 </head>
 <body>
-  <main>
+  <!-- Header -->
+  <header class="neu header" role="banner">
     <h1>PulseSynth Studio</h1>
-    <p>Sample-accurate synth graphs with WASM DSP, AudioWorklet runtime, and a studio UI.</p>
-    <div class="grid">
-      <section class="neu" aria-label="Studio controls">
-        <button id="startAudio" aria-label="Start Audio">Start Audio</button>
-        <label>Master Gain <input id="masterGain" type="range" min="0" max="1" step="0.01" value="0.45" /></label>
-        <label>Osc Type <select id="oscType"><option>sine</option><option selected>saw</option><option>square</option><option>triangle</option></select></label>
-      </section>
-      <section class="neu" aria-label="Performance panel">
-        <pre id="perf">Awaiting engine…</pre>
-        <canvas id="scope" width="500" height="160"></canvas>
-      </section>
+    <div class="status" aria-live="polite">
+      <span><span class="status-dot red" id="audioDot"></span><span id="audioStatus">Audio: stopped</span></span>
+      <span><span class="status-dot red" id="apiDot"></span><span id="apiStatus">API: offline</span></span>
+      <span id="coopStatus" style="font-size:11px;opacity:0.6"></span>
     </div>
-  </main>
+    <button id="themeToggle" aria-label="Toggle dark mode" class="btn-sm">Light</button>
+  </header>
+
+  <!-- Tabs -->
+  <nav class="tabs" role="tablist" aria-label="Studio sections">
+    <button class="tab active" role="tab" data-tab="studio" aria-selected="true">Studio</button>
+    <button class="tab" role="tab" data-tab="patch" aria-selected="false">Patch</button>
+    <button class="tab" role="tab" data-tab="cloud" aria-selected="false">Cloud</button>
+    <button class="tab" role="tab" data-tab="perf" aria-selected="false">Performance</button>
+    <button class="tab" role="tab" data-tab="docs" aria-selected="false">Docs</button>
+  </nav>
+
+  <!-- Studio Tab -->
+  <section id="tab-studio" class="tab-content active" role="tabpanel" aria-label="Studio">
+    <div class="grid">
+      <div class="neu">
+        <div class="btn-group">
+          <button id="startAudio" class="btn-primary" aria-label="Start Audio">Start Audio</button>
+          <button id="stopAudio" class="btn-sm" aria-label="Stop Audio">Stop</button>
+        </div>
+        <div class="controls-grid">
+          <label>Master Gain
+            <input id="masterGain" type="range" min="0" max="1" step="0.01" value="0.45" aria-label="Master gain" />
+          </label>
+          <label>Oscillator
+            <select id="oscType" aria-label="Oscillator type">
+              <option value="sine">Sine</option>
+              <option value="saw" selected>Saw</option>
+              <option value="square">Square</option>
+              <option value="triangle">Triangle</option>
+            </select>
+          </label>
+          <label>Filter Cutoff
+            <input id="cutoff" type="range" min="20" max="20000" step="1" value="2200" aria-label="Filter cutoff" />
+          </label>
+          <label>Filter Resonance
+            <input id="resonance" type="range" min="0.1" max="20" step="0.1" value="0.5" aria-label="Filter resonance" />
+          </label>
+          <label>Attack
+            <input id="envAttack" type="range" min="0.001" max="2" step="0.001" value="0.01" aria-label="Envelope attack" />
+          </label>
+          <label>Decay
+            <input id="envDecay" type="range" min="0.001" max="2" step="0.001" value="0.2" aria-label="Envelope decay" />
+          </label>
+          <label>Sustain
+            <input id="envSustain" type="range" min="0" max="1" step="0.01" value="0.8" aria-label="Envelope sustain" />
+          </label>
+          <label>Release
+            <input id="envRelease" type="range" min="0.001" max="4" step="0.001" value="0.4" aria-label="Envelope release" />
+          </label>
+        </div>
+      </div>
+      <div class="neu">
+        <canvas id="scope" width="500" height="140" aria-label="Oscilloscope"></canvas>
+        <div style="margin-top:8px;font-size:12px;opacity:0.7" id="scopeInfo">Oscilloscope — start audio to visualize</div>
+      </div>
+    </div>
+    <div class="neu keyboard" id="keyboard" role="group" aria-label="Piano keyboard"></div>
+  </section>
+
+  <!-- Patch Tab -->
+  <section id="tab-patch" class="tab-content" role="tabpanel" aria-label="Patch editor">
+    <div class="grid">
+      <div class="neu">
+        <h3 style="margin-bottom:12px">Patch Editor</h3>
+        <div class="patch-form" id="patchForm">
+          <label>Name <input id="patchName" type="text" value="Warm Starter" /></label>
+          <label>Oscillator
+            <select id="patchOsc"><option value="sine">Sine</option><option value="saw" selected>Saw</option><option value="square">Square</option><option value="triangle">Triangle</option></select>
+          </label>
+          <label>Master Gain <input id="patchGain" type="range" min="0" max="1" step="0.01" value="0.45" /></label>
+          <label>Noise Amount <input id="patchNoise" type="range" min="0" max="1" step="0.01" value="0.02" /></label>
+          <label>Cutoff <input id="patchCutoff" type="range" min="20" max="20000" step="1" value="2200" /></label>
+          <label>Resonance <input id="patchResonance" type="range" min="0.1" max="20" step="0.1" value="0.5" /></label>
+          <label>Attack <input id="patchAttack" type="range" min="0.001" max="5" step="0.001" value="0.01" /></label>
+          <label>Decay <input id="patchDecay" type="range" min="0.001" max="5" step="0.001" value="0.2" /></label>
+          <label>Sustain <input id="patchSustain" type="range" min="0" max="1" step="0.01" value="0.8" /></label>
+          <label>Release <input id="patchRelease" type="range" min="0.001" max="8" step="0.001" value="0.4" /></label>
+        </div>
+        <div class="btn-group" style="margin-top:12px">
+          <button id="applyPatch" class="btn-primary btn-sm">Apply Patch</button>
+          <button id="resetPatch" class="btn-sm">Reset Default</button>
+        </div>
+      </div>
+      <div class="neu">
+        <h3 style="margin-bottom:12px">Presets</h3>
+        <ul class="patch-list" id="presetList"></ul>
+        <div class="btn-group" style="margin-top:12px">
+          <button id="savePreset" class="btn-sm">Save Current</button>
+          <button id="exportPatch" class="btn-sm">Export JSON</button>
+          <button id="importPatch" class="btn-sm">Import JSON</button>
+        </div>
+        <input type="file" id="importFile" accept=".json" style="display:none" />
+        <pre id="patchJson" class="neu-inset" style="margin-top:12px;font-size:11px;max-height:200px;overflow:auto"></pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- Cloud Tab -->
+  <section id="tab-cloud" class="tab-content" role="tabpanel" aria-label="Cloud save">
+    <div class="grid">
+      <div class="neu" id="authSection">
+        <h3 style="margin-bottom:12px">Account</h3>
+        <div id="authForms">
+          <div class="auth-form">
+            <input id="authEmail" type="email" placeholder="Email" aria-label="Email" />
+            <input id="authPassword" type="password" placeholder="Password (min 8 chars)" aria-label="Password" />
+            <div class="btn-group">
+              <button id="loginBtn" class="btn-primary btn-sm">Log In</button>
+              <button id="signupBtn" class="btn-sm">Sign Up</button>
+            </div>
+            <p id="authError" style="color:var(--red);font-size:12px;display:none"></p>
+          </div>
+        </div>
+        <div id="authLoggedIn" style="display:none">
+          <p>Logged in <button id="logoutBtn" class="btn-sm">Log Out</button></p>
+        </div>
+      </div>
+      <div class="neu">
+        <h3 style="margin-bottom:12px">My Cloud Patches</h3>
+        <ul class="patch-list" id="cloudPatchList"></ul>
+        <div class="btn-group" style="margin-top:12px">
+          <button id="cloudSave" class="btn-primary btn-sm">Save to Cloud</button>
+          <button id="cloudRefresh" class="btn-sm">Refresh</button>
+        </div>
+        <p id="cloudMsg" style="font-size:12px;margin-top:8px;display:none"></p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Performance Tab -->
+  <section id="tab-perf" class="tab-content" role="tabpanel" aria-label="Performance">
+    <div class="neu">
+      <h3>Audio Performance</h3>
+      <div class="perf-grid" id="perfGrid">
+        <div class="perf-card neu-inset"><div class="value" id="perfCpu">0.00</div><div class="label">CPU ms (avg)</div></div>
+        <div class="perf-card neu-inset"><div class="value" id="perfP95">0.00</div><div class="label">CPU ms (p95)</div></div>
+        <div class="perf-card neu-inset"><div class="value" id="perfXruns">0</div><div class="label">Xruns</div></div>
+        <div class="perf-card neu-inset"><div class="value" id="perfVoices">0</div><div class="label">Active Voices</div></div>
+        <div class="perf-card neu-inset"><div class="value" id="perfSr">0</div><div class="label">Sample Rate</div></div>
+        <div class="perf-card neu-inset"><div class="value" id="perfFrames">0</div><div class="label">Rendered Frames</div></div>
+      </div>
+      <canvas id="perfChart" width="600" height="120" aria-label="CPU usage chart"></canvas>
+    </div>
+  </section>
+
+  <!-- Docs Tab -->
+  <section id="tab-docs" class="tab-content" role="tabpanel" aria-label="Documentation">
+    <div class="neu docs-content">
+      <h3>Quick Start</h3>
+      <ol>
+        <li>Click <strong>Start Audio</strong> (user gesture required by browsers)</li>
+        <li>Play notes using your computer keyboard or click the on-screen piano</li>
+        <li>Adjust controls: gain, oscillator type, filter, and envelope</li>
+        <li>Save patches locally or to the cloud</li>
+      </ol>
+      <h3>Keyboard Shortcuts</h3>
+      <table>
+        <tr><th>Keys</th><th>Notes</th></tr>
+        <tr><td><kbd>Z</kbd> <kbd>X</kbd> <kbd>C</kbd> <kbd>V</kbd> <kbd>B</kbd> <kbd>N</kbd> <kbd>M</kbd></td><td>C3 D3 E3 F3 G3 A3 B3 (white keys, lower octave)</td></tr>
+        <tr><td><kbd>S</kbd> <kbd>D</kbd> <kbd>G</kbd> <kbd>H</kbd> <kbd>J</kbd></td><td>C#3 D#3 F#3 G#3 A#3 (black keys, lower octave)</td></tr>
+        <tr><td><kbd>Q</kbd> <kbd>W</kbd> <kbd>E</kbd> <kbd>R</kbd> <kbd>T</kbd> <kbd>Y</kbd> <kbd>U</kbd> <kbd>I</kbd> <kbd>O</kbd> <kbd>P</kbd></td><td>C4–E5 (white keys, upper octave)</td></tr>
+        <tr><td><kbd>2</kbd> <kbd>3</kbd> <kbd>5</kbd> <kbd>6</kbd> <kbd>7</kbd> <kbd>9</kbd> <kbd>0</kbd></td><td>Black keys, upper octave</td></tr>
+      </table>
+      <h3>Architecture</h3>
+      <p>PulseSynth uses a <strong>Rust WASM DSP core</strong> running inside an <strong>AudioWorklet</strong> for real-time synthesis. The worklet communicates with the main thread via <code>postMessage</code>. All DSP runs in the audio thread with zero allocations in the render loop.</p>
+      <h3>COOP/COEP</h3>
+      <p>For SharedArrayBuffer support, the page requires <code>Cross-Origin-Opener-Policy: same-origin</code> and <code>Cross-Origin-Embedder-Policy: require-corp</code> headers. The Vite dev server provides these. For production, configure your hosting provider.</p>
+    </div>
+  </section>
+
   <script type="module" src="/src/main.ts"></script>
 </body>
 </html>

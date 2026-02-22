@@ -8,3 +8,9 @@ coverage
 *.db-journal
 .DS_Store
 packages/wasm-dsp/target
+*.wav
+.turbo
+
+# Keep generated assets in studio public (built from packages)
+!apps/studio/public/worklet/
+!apps/studio/public/wasm/

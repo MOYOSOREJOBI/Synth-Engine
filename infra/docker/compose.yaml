@@ -3,4 +3,15 @@ services:
     build:
       context: ../..
       dockerfile: infra/docker/Dockerfile.api
-    ports: ["8787:8787"]
+    ports:
+      - "8787:8787"
+    environment:
+      - PORT=8787
+      - JWT_SECRET=${JWT_SECRET:-dev-secret-change-in-prod}
+      - DB_FILE=/data/pulsesynth.db
+      - CORS_ORIGIN=${CORS_ORIGIN:-http://localhost:5173}
+    volumes:
+      - api-data:/data
+
+volumes:
+  api-data:
