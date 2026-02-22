@@ -1,0 +1,22 @@
+{
+  "name": "@pulsesynth/studio",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "predev": "pnpm --filter @pulsesynth/worklet build && pnpm --filter @pulsesynth/wasm-dsp build",
+    "dev": "vite",
+    "prebuild": "pnpm --filter @pulsesynth/worklet build && pnpm --filter @pulsesynth/wasm-dsp build",
+    "build": "vite build",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@pulsesynth/engine": "workspace:*",
+    "@pulsesynth/shared": "workspace:*"
+  },
+  "devDependencies": {
+    "vite": "^6.0.3",
+    "typescript": "^5.7.2"
+  }
+}

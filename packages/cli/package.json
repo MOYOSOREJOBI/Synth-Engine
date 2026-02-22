@@ -1,0 +1,22 @@
+{
+  "name": "@pulsesynth/cli",
+  "version": "0.2.0",
+  "type": "module",
+  "bin": { "pulsesynth": "dist/index.js" },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "tsx src/index.ts dev",
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "bench": "tsx src/index.ts bench",
+    "render": "tsx src/index.ts render"
+  },
+  "dependencies": {
+    "@pulsesynth/shared": "workspace:*",
+    "cac": "^6.7.14"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  }
+}

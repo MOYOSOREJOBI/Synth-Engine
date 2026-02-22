@@ -1,0 +1,10 @@
+{
+  "name": "@pulsesynth/wasm-dsp",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "build": "cargo build --release --target wasm32-unknown-unknown && node scripts/copy-wasm.mjs",
+    "test": "cargo test",
+    "dev": "pnpm build"
+  }
+}

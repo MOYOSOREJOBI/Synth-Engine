@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PulseSynth Studio</title>
+  <style>
+    :root{--bg:#e8ecf3;--surface:#eef2f9;--text:#1f2937;--accent:#6d5efc;--good:#1ea672;}
+    [data-theme='dark']{--bg:#141923;--surface:#1a2230;--text:#e8edf6;--accent:#8f7dff}
+    body{margin:0;padding:20px;background:var(--bg);color:var(--text);font-family:Inter,system-ui,sans-serif}
+    .neu{background:var(--surface);box-shadow:8px 8px 16px rgba(0,0,0,.18),-8px -8px 16px rgba(255,255,255,.08);border-radius:16px;padding:16px}
+    .row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}.tabs{display:flex;gap:8px;flex-wrap:wrap}
+    button,input,select{border-radius:10px;border:1px solid #9ca3af55;padding:8px 10px;background:transparent;color:inherit}
+    button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--accent)}
+    .grid{display:grid;grid-template-columns:2fr 1fr;gap:16px}.hidden{display:none}.keys button{min-width:36px}.ok{color:var(--good)}
+    @media (max-width:900px){.grid{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+  <header class="neu row" aria-label="header">
+    <h1 style="margin:0">PulseSynth Studio</h1>
+    <span id="audioState">Audio: stopped</span>
+    <span id="apiState">API: unknown</span>
+    <span id="isoState">Isolation: checking…</span>
+    <button id="themeToggle" aria-label="Toggle theme">Theme</button>
+  </header>
+  <nav class="tabs" style="margin:12px 0" aria-label="Main tabs">
+    <button data-tab="studio">Studio</button><button data-tab="patch">Patch</button><button data-tab="cloud">Cloud</button><button data-tab="performance">Performance</button><button data-tab="docs">Docs</button>
+  </nav>
+
+  <section id="tab-studio" class="grid">
+    <div class="neu">
+      <div class="row"><button id="startAudio">Start Audio</button><button id="stopAudio">Stop</button></div>
+      <div class="row keys" id="keys"></div>
+      <canvas id="scope" width="760" height="180" aria-label="Oscilloscope"></canvas>
+    </div>
+    <aside class="neu">
+      <label>Gain <input id="masterGain" type="range" min="0" max="1" step="0.01" value="0.42" /></label><br/>
+      <label>Cutoff <input id="cutoff" type="range" min="80" max="12000" step="10" value="2200" /></label><br/>
+      <label>Attack <input id="envAttack" type="range" min="0.001" max="1" step="0.001" value="0.01" /></label><br/>
+      <label>Decay <input id="envDecay" type="range" min="0.01" max="1" step="0.01" value="0.2" /></label><br/>
+      <label>Sustain <input id="envSustain" type="range" min="0" max="1" step="0.01" value="0.75" /></label><br/>
+      <label>Release <input id="envRelease" type="range" min="0.01" max="2" step="0.01" value="0.35" /></label>
+    </aside>
+  </section>
+
+  <section id="tab-patch" class="neu hidden">
+    <div class="row"><input id="patchName" placeholder="Patch name"/><button id="saveLocal">Save Local</button><button id="resetPatch">Reset</button></div>
+    <div class="row"><button id="exportPatch">Export JSON</button><input id="importPatch" type="file" accept="application/json" /></div>
+    <ul id="localPatches"></ul>
+  </section>
+
+  <section id="tab-cloud" class="neu hidden">
+    <div class="row"><input id="email" placeholder="email"/><input id="password" type="password" placeholder="password"/><button id="signup">Sign Up</button><button id="login">Login</button></div>
+    <div class="row"><button id="saveCloud">Save Current Patch</button><button id="refreshCloud">Refresh</button></div>
+    <ul id="cloudPatches"></ul>
+  </section>
+
+  <section id="tab-performance" class="neu hidden"><pre id="perf"></pre><canvas id="perfChart" width="760" height="120"></canvas></section>
+  <section id="tab-docs" class="neu hidden"><p>Shortcuts: A/W/S/E/D/F/T/G/Y/H/U/J for notes. Start audio requires user gesture.</p></section>
+
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>
