@@ -9,7 +9,8 @@
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",
     "bench": "pnpm --filter @pulsesynth/cli bench",
-    "render": "pnpm --filter @pulsesynth/cli render"
+    "render": "pnpm --filter @pulsesynth/cli render",
+    "check:conflicts": "rg -n '^(<<<<<<<|=======|>>>>>>>)' -S . && exit 1 || exit 0"
   },
   "devDependencies": {
     "@playwright/test": "^1.51.0",
